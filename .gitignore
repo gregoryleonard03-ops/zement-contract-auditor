@@ -2,5 +2,3 @@
 __pycache__/
 *.pyc
 .DS_Store
-tests/sample_contracts/*.pdf
-tests/sample_contracts/*.docx

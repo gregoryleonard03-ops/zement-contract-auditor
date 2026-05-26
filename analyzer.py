@@ -32,6 +32,9 @@ def extract_text(uploaded_file) -> str:
         doc = Document(io.BytesIO(data))
         return "\n".join(p.text for p in doc.paragraphs).strip()
 
+    if name.endswith(".txt"):
+        return data.decode("utf-8", errors="replace").strip()
+
     raise ValueError(f"Unsupported file type: {uploaded_file.name}")
 
 

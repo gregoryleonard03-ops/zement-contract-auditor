@@ -232,8 +232,8 @@ def main():
 
     # Main upload area
     uploaded = st.file_uploader(
-        "Upload vendor contracts (PDF or DOCX)",
-        type=["pdf", "docx"],
+        "Upload vendor contracts (PDF, DOCX, or TXT)",
+        type=["pdf", "docx", "txt"],
         accept_multiple_files=True,
         help="Upload one or more contracts. Files are processed in-session and never stored.",
     )
