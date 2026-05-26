@@ -1,8 +1,6 @@
 from pathlib import Path
 import streamlit as st
 
-st.set_page_config(page_title="CRM Analysis — Zement", page_icon="📊", layout="wide")
-
 AUDIT_FILE = Path(__file__).parent.parent / "data" / "smartsheet_audit.md"
 
 CSS = """
