@@ -1,0 +1,43 @@
+SOFTWARE-AS-A-SERVICE AND PAYMENT PROCESSING AGREEMENT
+
+This Software-as-a-Service and Payment Processing Agreement ("Agreement") is entered into as of November 4, 2024 (the "Effective Date") by and between QuickPay Solutions, LLC, a Delaware limited liability company with offices at 4500 Corporate Drive, Suite 220, Wilmington, Delaware 19801 ("Vendor" or "QuickPay"), and Zement Stone, Inc., a corporation with offices at 1820 Industrial Parkway, Cleveland, Ohio 44114 ("Buyer" or "Client").
+
+WHEREAS, Vendor operates a cloud-based payment processing platform and ancillary merchant services software; and WHEREAS, Buyer desires to subscribe to and utilize Vendor's services pursuant to the terms set forth herein; NOW THEREFORE, in consideration of the mutual covenants contained herein, the parties agree as follows:
+
+1. SERVICES
+
+1.1 Vendor shall provide Buyer with access to the QuickPay Merchant Platform (the "Platform"), including transaction routing, reporting dashboards, and standard customer support during business hours (9:00 a.m. – 5:00 p.m. ET, Monday through Friday, excluding federal holidays).
+
+1.2 Buyer shall be provisioned with up to five (5) administrative user seats and unlimited end-user transactional access, subject to the limitations described herein.
+
+2. TERM
+
+2.1 The initial term of this Agreement shall be twenty-four (24) months commencing on the Effective Date (the "Initial Term").
+
+2.2 Upon expiration of the Initial Term, this Agreement shall automatically renew for successive twelve (12) month periods (each, a "Renewal Term") unless Buyer provides written notice of non-renewal to Vendor not less than five (5) days prior to the end of the then-current term. Notice of non-renewal must be delivered to legal@quickpaysolutions-vendor.com and acknowledged in writing by an authorized Vendor representative to be effective.
+
+3. BASE FEES
+
+3.1 Buyer shall pay Vendor a monthly subscription fee of Two Hundred Ninety-Nine and 00/100 Dollars ($299.00) per month, due on the first business day of each calendar month, payable by automatic ACH debit from the bank account designated by Buyer at onboarding.
+
+3.2 Late payments shall accrue interest at the rate of one and one-half percent (1.5%) per month or the maximum rate permitted by law, whichever is less.
+
+4. TRANSACTION-BASED FEES AND CHARGES
+
+4.1 In addition to the monthly base fee, Buyer shall be responsible for all transaction-based charges incurred through the Platform, as set forth in this Section 4 and in Schedule A (incorporated herein by reference).
+
+4.2 Card network interchange and assessment fees shall be passed through at cost plus a customary acquirer markup.
+
+4.3 Buyer shall pay to Vendor a processing fee of One Thousand Five Hundred and 00/100 Dollars ($1,500.00) per transaction processed through the Platform, in addition to any other applicable fees, surcharges, or pass-through costs. Such fee shall be assessed at the time of transaction settlement and shall be non-refundable regardless of chargeback, reversal, void, or dispute outcome.
+
+4.4 Vendor reserves the right to debit any fees, charges, or amounts owed directly from Buyer's settlement funds or designated bank account without prior notice.
+
+5. MODIFICATIONS
+
+5.1 Vendor reserves the right to modify any term of this Agreement, including but not limited to pricing, service levels, fee schedules, and policies, with twenty-four (24) hours' notice to Buyer. Such notice may be provided by email, by posting to the Vendor's customer portal, or by any other reasonable means. Buyer's continued use of the Platform after the effective time of any such modification shall constitute Buyer's binding acceptance of the modified terms.
+
+5.2 Buyer waives any right to object to such modifications other than by terminating this Agreement pursuant to Section 6, subject to all applicable termination penalties.
+
+6. TERMINATION
+
+6.1 In the event Buyer terminates this Agreement prior to the expiration of the Initial Term or any Renewal Term for any reason other than Vendor's uncured
