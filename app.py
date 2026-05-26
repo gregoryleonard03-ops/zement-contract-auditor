@@ -196,12 +196,12 @@ def run_analysis(uploaded_files):
 
 def load_sample_contracts():
     samples = []
-    for name in ["contract_a_clean.txt", "contract_b_medium.txt", "contract_c_toxic.txt"]:
+    for name in ["contract_a_clean.pdf", "contract_b_medium.pdf", "contract_c_toxic.pdf"]:
         path = SAMPLE_DIR / name
         if path.exists():
             content = path.read_bytes()
             fake_file = io.BytesIO(content)
-            fake_file.name = name.replace(".txt", ".pdf")
+            fake_file.name = name
             samples.append(fake_file)
     return samples
 
