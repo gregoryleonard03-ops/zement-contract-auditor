@@ -90,7 +90,14 @@ def render_lead_card(row: pd.Series):
     emoji  = TIER_EMOJI.get(tier, "")
     pct    = min(100, score)
 
-    address    = row.get("address", "—") or "—"
+    raw_address = str(row.get("address", "")).strip()
+    address = raw_address if raw_address and raw_address.lower() not in ("nan", "", ", ,") else "—"
+    # For CW data: show project name from description as header if address is unknown
+    if address == "—":
+        desc_full = str(row.get("description", ""))
+        project_name = desc_full.split("—")[0].strip() if "—" in desc_full else desc_full[:60]
+        if project_name:
+            address = project_name
     project    = row.get("contractor_name", "") or row.get("company", "")
     action     = row.get("action", "")
     desc       = str(row.get("description", ""))[:140]
