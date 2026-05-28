@@ -8,6 +8,7 @@ import streamlit.components.v1 as components
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from scoring import score_permit
+from crm_utils import load_crm, add_to_crm, STATUS_ICON
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 
@@ -146,8 +147,29 @@ def render_lead_card(row: pd.Series):
         """,
         unsafe_allow_html=True,
     )
-    with st.expander("View outreach email"):
+    with st.expander("View outreach email / Add to CRM"):
         st.text(row.get("outreach", "—"))
+        st.markdown("---")
+
+        email = str(row.get("email", "")).strip()
+        crm = st.session_state.get("crm_data", {})
+
+        if not email or email == "nan":
+            st.warning("⚠️ Нет email — нельзя добавить в CRM")
+        else:
+            email_key = email.lower()
+            if email_key in crm:
+                status = crm[email_key].get("status", "В очереди")
+                icon = STATUS_ICON.get(status, "🔵")
+                st.success(f"{icon} Уже в CRM — статус: **{status}**")
+            else:
+                card_key = f"crm_{email_key.replace('@','_').replace('.','_')}"
+                if st.button("➕ В CRM (сгенерировать письмо)", key=card_key, type="primary"):
+                    with st.spinner("Добавляю в CRM и генерирую письмо…"):
+                        updated = add_to_crm(row.to_dict(), crm)
+                    st.session_state["crm_data"] = updated
+                    st.success(f"✅ {str(row.get('company') or row.get('contractor_name',''))[:40]} добавлена в CRM!")
+                    st.rerun()
 
 
 def show_leads(df: pd.DataFrame, key_prefix: str):
@@ -254,6 +276,10 @@ def read_uploaded_file(uploaded) -> pd.DataFrame:
 def main():
     render_header()
     st.markdown(CSS, unsafe_allow_html=True)
+
+    # Load CRM state once per session
+    if "crm_data" not in st.session_state:
+        st.session_state["crm_data"] = load_crm()
 
     sources = load_curated()
 
