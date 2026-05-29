@@ -72,16 +72,30 @@ def render_stats(df: pd.DataFrame):
     c5.metric("✉️ Email ready", int(has_email.sum()))
 
 
+_BADGE = "padding:2px 8px;border-radius:10px;font-size:.78rem;font-weight:600;"
+ACT_STYLE = {
+    "Very High": f"background:#27ae60;color:white;{_BADGE}",
+    "High":      f"background:#2980b9;color:white;{_BADGE}",
+    "Medium":    f"background:#f39c12;color:white;{_BADGE}",
+    "Low":       f"background:#95a5a6;color:white;{_BADGE}",
+}
+TIER_STYLE = {
+    "Hot":  "background:#e74c3c;color:white;padding:3px 10px;border-radius:12px;font-size:.82rem;font-weight:700;",
+    "Warm": "background:#f39c12;color:white;padding:3px 10px;border-radius:12px;font-size:.82rem;font-weight:700;",
+    "Cold": "background:#bdc3c7;color:white;padding:3px 10px;border-radius:12px;font-size:.82rem;font-weight:700;",
+}
+
+
 def actuality_html(act: str) -> str:
-    css = ACT_CLASS.get(act, "act-unk")
+    style = ACT_STYLE.get(act, f"background:#ddd;color:#666;{_BADGE}")
     lbl = ACT_LABEL.get(act, act or "—")
-    return f'<span class="{css}">{lbl}</span>'
+    return f'<span style="{style}">{lbl}</span>'
 
 
 def email_html(email: str) -> str:
     if email and str(email).strip() and str(email).strip() != "nan":
-        return f'<span class="email-ok">✉ {email}</span>'
-    return '<span class="email-need">⚠️ Email нужен</span>'
+        return f'<span style="background:#e8f5e9;color:#2e7d32;{_BADGE}">✉ {email}</span>'
+    return f'<span style="background:#fff3e0;color:#e65100;{_BADGE}">⚠️ Email нужен</span>'
 
 
 def render_lead_card(row: pd.Series, key_prefix: str = "card", idx: int = 0):
@@ -129,21 +143,22 @@ def render_lead_card(row: pd.Series, key_prefix: str = "card", idx: int = 0):
     else:
         crm_badge = ""
 
+    tier_badge_style = TIER_STYLE.get(tier, f"background:#ddd;color:#666;padding:3px 10px;border-radius:12px;font-size:.82rem;font-weight:700;")
     st.markdown(
         f"""
-        <div class="lead-card" style="border-left-color:{border}">
+        <div style="background:white;border-radius:10px;padding:1rem 1.2rem;margin-bottom:.7rem;border-left:5px solid {border};box-shadow:0 1px 4px rgba(0,0,0,.06);">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
                 <strong style="font-size:.95rem;">{address}</strong>
                 <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
                     {crm_badge}
                     {act_badge}
                     {email_badge}
-                    <span class="tier-{tier.lower()}">{emoji} {tier} · {score}/100</span>
+                    <span style="{tier_badge_style}">{emoji} {tier} · {score}/100</span>
                 </div>
             </div>
             <div style="margin:6px 0 4px;">
-                <div class="score-bar-wrap">
-                    <div class="score-bar" style="width:{pct}%;background:{border};"></div>
+                <div style="background:#f0f0f0;border-radius:6px;height:8px;width:100%;">
+                    <div style="border-radius:6px;height:8px;width:{pct}%;background:{border};"></div>
                 </div>
             </div>
             <div style="font-size:.82rem;color:#555;margin-top:4px;">
