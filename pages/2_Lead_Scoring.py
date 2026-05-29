@@ -119,12 +119,23 @@ def render_lead_card(row: pd.Series, key_prefix: str = "card", idx: int = 0):
     stage_str   = f" &nbsp;·&nbsp; 📅 {stage}" if stage else ""
     city_str    = f" &nbsp;·&nbsp; 📍 {city}" if city else ""
 
+    crm_data = st.session_state.get("crm_data", {})
+    email_key_check = email.lower().strip() if email and email.strip() not in ("", "nan") else ""
+    crm_entry = crm_data.get(email_key_check) if email_key_check else None
+    if crm_entry:
+        crm_status = crm_entry.get("status", "В очереди")
+        crm_icon = STATUS_ICON.get(crm_status, "🔵")
+        crm_badge = f'<span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:10px;font-size:.78rem;font-weight:600;white-space:nowrap;">{crm_icon} {crm_status}</span>'
+    else:
+        crm_badge = ""
+
     st.markdown(
         f"""
         <div class="lead-card" style="border-left-color:{border}">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
                 <strong style="font-size:.95rem;">{address}</strong>
                 <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                    {crm_badge}
                     {act_badge}
                     {email_badge}
                     <span class="tier-{tier.lower()}">{emoji} {tier} · {score}/100</span>
