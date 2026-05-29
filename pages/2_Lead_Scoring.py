@@ -1,4 +1,3 @@
-import html as _html
 import io
 import sys
 from pathlib import Path
@@ -102,22 +101,22 @@ def email_html(email: str) -> str:
 def render_lead_card(row: pd.Series, key_prefix: str = "card", idx: int = 0):
     tier   = row.get("tier", "Cold")
     score  = int(row.get("score", 0))
-    border = TIER_BORDER.get(tier, "#ccc")
     emoji  = TIER_EMOJI.get(tier, "")
-    pct    = min(100, score)
 
     raw_address = str(row.get("address", "")).strip()
-    address = raw_address if raw_address and raw_address.lower() not in ("nan", "", ", ,") else "—"
-    # For CW data: show project name from description as header if address is unknown
-    if address == "—":
+    address = raw_address if raw_address and raw_address.lower() not in ("nan", "", ", ,") else ""
+    if not address:
         desc_full = str(row.get("description", ""))
         project_name = desc_full.split("—")[0].strip() if "—" in desc_full else desc_full[:60]
-        if project_name:
-            address = project_name
-    project    = row.get("contractor_name", "") or row.get("company", "")
-    action     = row.get("action", "")
-    desc       = str(row.get("description", ""))[:140]
-    stage      = str(row.get("stage", "")) if row.get("stage") else ""
+        address = project_name or "—"
+
+    project  = str(row.get("contractor_name", "") or row.get("company", "") or "—")
+    action   = str(row.get("action", ""))
+    desc     = str(row.get("description", ""))[:140]
+    stage    = str(row.get("stage", "")) if row.get("stage") else ""
+    act      = str(row.get("актуальность", ""))
+    email    = str(row.get("email", ""))
+    city     = str(row.get("city", ""))
 
     value = row.get("estimated_value", 0)
     try:
@@ -125,73 +124,53 @@ def render_lead_card(row: pd.Series, key_prefix: str = "card", idx: int = 0):
     except Exception:
         value_str = str(value)
 
-    act   = str(row.get("актуальность", ""))
-    email = str(row.get("email", ""))
-    city  = str(row.get("city", ""))
-
-    act_badge   = actuality_html(act)
-    email_badge = email_html(email)
-
-    # Escape all user-data before inserting into HTML
-    address    = _html.escape(address)
-    desc       = _html.escape(desc)
-    project    = _html.escape(str(project or "—"))
-    value_str  = _html.escape(value_str)
-    action     = _html.escape(str(action))
-    stage_str  = f" &nbsp;·&nbsp; 📅 {_html.escape(stage)}" if stage else ""
-    city_str   = f" &nbsp;·&nbsp; 📍 {_html.escape(city)}" if city else ""
-
+    # CRM status check
     crm_data = st.session_state.get("crm_data", {})
     email_key_check = email.lower().strip() if email and email.strip() not in ("", "nan") else ""
     crm_entry = crm_data.get(email_key_check) if email_key_check else None
-    if crm_entry:
-        crm_status = crm_entry.get("status", "В очереди")
-        crm_icon = STATUS_ICON.get(crm_status, "🔵")
-        crm_badge = f'<span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:10px;font-size:.78rem;font-weight:600;white-space:nowrap;">{crm_icon} {crm_status}</span>'
-    else:
-        crm_badge = ""
+    crm_status = crm_entry.get("status", "") if crm_entry else ""
 
-    tier_badge_style = TIER_STYLE.get(tier, f"background:#ddd;color:#666;padding:3px 10px;border-radius:12px;font-size:.82rem;font-weight:700;")
-    st.markdown(
-        f"""
-        <div style="background:white;border-radius:10px;padding:1rem 1.2rem;margin-bottom:.7rem;border-left:5px solid {border};box-shadow:0 1px 4px rgba(0,0,0,.06);">
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">
-                <strong style="font-size:.95rem;">{address}</strong>
-                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-                    {crm_badge}
-                    {act_badge}
-                    {email_badge}
-                    <span style="{tier_badge_style}">{emoji} {tier} · {score}/100</span>
-                </div>
-            </div>
-            <div style="margin:6px 0 4px;">
-                <div style="background:#f0f0f0;border-radius:6px;height:8px;width:100%;">
-                    <div style="border-radius:6px;height:8px;width:{pct}%;background:{border};"></div>
-                </div>
-            </div>
-            <div style="font-size:.82rem;color:#555;margin-top:4px;">
-                💰 {value_str}
-                &nbsp;|&nbsp; 🏢 {project or '—'}
-                {city_str}
-                {stage_str}
-                &nbsp;|&nbsp; ✅ <em>{action}</em>
-            </div>
-            {"<div style='font-size:.78rem;color:#888;margin-top:3px;'>"+desc+"</div>" if desc else ""}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # Plain text labels — no HTML, no escaping needed
+    act_label  = ACT_LABEL.get(act, act or "")
+    has_email  = email and email.strip() not in ("", "nan")
+    email_disp = f"✉ {email}" if has_email else "⚠️ Email нужен"
+    crm_disp   = f"{STATUS_ICON.get(crm_status, '🔵')} {crm_status}" if crm_status else ""
+    tier_color = {"Hot": "red", "Warm": "orange", "Cold": "blue"}.get(tier, "grey")
+
+    meta_parts = [f"💰 {value_str}", f"🏢 {project}"]
+    if city:   meta_parts.append(f"📍 {city}")
+    if stage:  meta_parts.append(f"📅 {stage}")
+    if action: meta_parts.append(f"✅ {action}")
+
+    with st.container(border=True):
+        col_main, col_tier = st.columns([5, 1])
+        with col_main:
+            header = f"**{address}**"
+            if crm_disp:
+                header += f"  `{crm_disp}`"
+            st.markdown(header)
+            st.caption("  |  ".join(meta_parts))
+            if desc and desc.strip() not in ("", "nan"):
+                st.caption(desc)
+        with col_tier:
+            st.markdown(f":{tier_color}[{emoji} **{tier}**]")
+            st.progress(score / 100)
+            st.caption(f"**{score}/100**")
+            if act_label:
+                st.caption(act_label)
+            st.caption(email_disp)
+
     with st.expander("View outreach email / Add to CRM", key=f"exp_{key_prefix}_{idx}"):
         st.text(row.get("outreach", "—"))
         st.markdown("---")
 
-        email = str(row.get("email", "")).strip()
+        email_val = str(row.get("email", "")).strip()
         crm = st.session_state.get("crm_data", {})
 
-        if not email or email == "nan":
+        if not email_val or email_val == "nan":
             st.warning("⚠️ Нет email — нельзя добавить в CRM")
         else:
-            email_key = email.lower()
+            email_key = email_val.lower()
             if email_key in crm:
                 status = crm[email_key].get("status", "В очереди")
                 icon = STATUS_ICON.get(status, "🔵")
