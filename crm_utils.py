@@ -1,13 +1,12 @@
-"""Shared CRM helpers used by Lead Scoring and CRM pages."""
+"""Shared CRM helpers. Backend: Google Sheets (with CSV fallback for local dev)."""
 import csv
 import sys
 from datetime import date
 from pathlib import Path
 
-# App root (tools/document_analyzer/) — works both locally and on Streamlit Cloud
 APP_DIR = Path(__file__).parent
 DATA_DIR = APP_DIR / "data"
-CRM_FILE = DATA_DIR / "outreach_crm.csv"
+CRM_FILE = DATA_DIR / "outreach_crm.csv"        # fallback only
 SENT_LOG_FILE = DATA_DIR / "sent_log.csv"
 
 FIELDNAMES = [
@@ -30,19 +29,142 @@ STATUSES = [
 ]
 
 STATUS_ICON = {
-    "В очереди":     "🔵",
-    "Отправлено":    "📨",
-    "Ответил":       "💬",
+    "В очереди":       "🔵",
+    "Отправлено":      "📨",
+    "Ответил":         "💬",
     "Митинг назначен": "📅",
-    "КП отправлено": "📋",
-    "Сделка":        "✅",
-    "Отказ":         "❌",
-    "Не актуально":  "⚪",
+    "КП отправлено":   "📋",
+    "Сделка":          "✅",
+    "Отказ":           "❌",
+    "Не актуально":    "⚪",
 }
 
+# ── Google Sheets connection ───────────────────────────────────────────────────
+
+def _get_sheet():
+    """Return gspread Worksheet. Raises RuntimeError if not configured."""
+    import gspread
+    from google.oauth2.service_account import Credentials
+
+    scopes = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive",
+    ]
+
+    creds_dict = None
+
+    # 1) Streamlit secrets (production)
+    try:
+        import streamlit as st
+        if "gcp_service_account" in st.secrets:
+            creds_dict = dict(st.secrets["gcp_service_account"])
+    except Exception:
+        pass
+
+    # 2) Local JSON file (dev)
+    if creds_dict is None:
+        local_key = APP_DIR / "service_account.json"
+        if local_key.exists():
+            import json
+            with open(local_key) as f:
+                creds_dict = json.load(f)
+
+    if creds_dict is None:
+        raise RuntimeError(
+            "Google Sheets credentials not found. "
+            "Add [gcp_service_account] to Streamlit secrets or place service_account.json in the app directory."
+        )
+
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    client = gspread.authorize(creds)
+
+    # Sheet ID from secrets or env
+    sheet_id = None
+    try:
+        import streamlit as st
+        sheet_id = st.secrets.get("GOOGLE_SHEET_ID") or st.secrets.get("gsheet", {}).get("sheet_id")
+    except Exception:
+        pass
+    if not sheet_id:
+        import os
+        sheet_id = os.getenv("GOOGLE_SHEET_ID")
+    if not sheet_id:
+        raise RuntimeError(
+            "GOOGLE_SHEET_ID not set. Add it to Streamlit secrets or .env."
+        )
+
+    spreadsheet = client.open_by_key(sheet_id)
+    try:
+        worksheet = spreadsheet.worksheet("CRM")
+    except gspread.WorksheetNotFound:
+        worksheet = spreadsheet.add_worksheet(title="CRM", rows=1000, cols=len(FIELDNAMES))
+        worksheet.append_row(FIELDNAMES)
+    return worksheet
+
+
+def _use_sheets() -> bool:
+    """Return True if Google Sheets backend is available."""
+    try:
+        import gspread  # noqa: F401
+        import streamlit as st
+        has_secrets = "gcp_service_account" in st.secrets
+        has_local = (APP_DIR / "service_account.json").exists()
+        return has_secrets or has_local
+    except Exception:
+        return False
+
+
+# ── Public API ─────────────────────────────────────────────────────────────────
 
 def load_crm() -> dict:
     """Return dict keyed by email (lowercase)."""
+    if _use_sheets():
+        return _load_from_sheets()
+    return _load_from_csv()
+
+
+def save_crm(crm: dict):
+    if _use_sheets():
+        _save_to_sheets(crm)
+    else:
+        _save_to_csv(crm)
+
+
+# ── Google Sheets backend ──────────────────────────────────────────────────────
+
+def _load_from_sheets() -> dict:
+    try:
+        ws = _get_sheet()
+        rows = ws.get_all_records(expected_headers=FIELDNAMES, default_blank="")
+        crm = {}
+        for row in rows:
+            key = str(row.get("email", "")).lower().strip()
+            if key:
+                crm[key] = {f: str(row.get(f, "")) for f in FIELDNAMES}
+        return crm
+    except Exception as e:
+        import streamlit as st
+        st.warning(f"Google Sheets недоступен, работаю с локальным CSV: {e}")
+        return _load_from_csv()
+
+
+def _save_to_sheets(crm: dict):
+    try:
+        ws = _get_sheet()
+        ws.clear()
+        ws.append_row(FIELDNAMES)
+        rows = [[str(entry.get(f, "")) for f in FIELDNAMES] for entry in crm.values()]
+        if rows:
+            ws.append_rows(rows, value_input_option="RAW")
+    except Exception as e:
+        import streamlit as st
+        st.warning(f"Не удалось сохранить в Google Sheets: {e}. Сохраняю локально.")
+        _save_to_csv(crm)
+
+
+# ── CSV fallback ───────────────────────────────────────────────────────────────
+
+def _load_from_csv() -> dict:
     if not CRM_FILE.exists():
         return {}
     crm = {}
@@ -54,7 +176,7 @@ def load_crm() -> dict:
     return crm
 
 
-def save_crm(crm: dict):
+def _save_to_csv(crm: dict):
     CRM_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(CRM_FILE, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=FIELDNAMES, extrasaction="ignore")
@@ -62,8 +184,9 @@ def save_crm(crm: dict):
         writer.writerows(crm.values())
 
 
+# ── Business logic (backend-agnostic) ─────────────────────────────────────────
+
 def generate_email_for_lead(lead: dict) -> tuple:
-    """Generate email subject+body. Returns (subject, body)."""
     sys.path.insert(0, str(APP_DIR))
     try:
         from personalizer import generate_email
@@ -74,11 +197,9 @@ def generate_email_for_lead(lead: dict) -> tuple:
 
 
 def add_to_crm(row: dict, crm: dict) -> dict:
-    """Add a lead row to CRM, generate email. Returns updated crm."""
     email = str(row.get("email", "")).strip()
     email_key = email.lower()
 
-    # Build unified lead dict for personalizer
     lead = {
         "first_name":      row.get("first_name") or row.get("contact_name", ""),
         "company":         row.get("company") or row.get("contractor_name", ""),
@@ -119,7 +240,6 @@ def add_to_crm(row: dict, crm: dict) -> dict:
 
 
 def mark_sent(email_key: str, crm: dict) -> dict:
-    """Mark lead as sent, append to sent_log.csv."""
     today = date.today().isoformat()
     if email_key in crm:
         crm[email_key]["status"] = "Отправлено"
