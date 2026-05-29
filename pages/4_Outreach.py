@@ -109,7 +109,7 @@ for email_key, entry in sorted(crm.items(), key=lambda x: x[1].get("added_date",
 
     label = f"{icon} **{company}** — {email} | {city} | {ptype} | {val_fmt}"
 
-    with st.expander(label, expanded=(status == "В очереди" and shown <= 3)):
+    with st.expander(label, expanded=(status == "В очереди" and shown <= 3), key=f"entry_{email_key}"):
         left, right = st.columns([2, 3])
 
         # ── Left: info + status ───────────────────────────────
