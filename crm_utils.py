@@ -207,6 +207,11 @@ def add_to_crm(row: dict, crm: dict) -> dict:
         "address":         row.get("address", ""),
         "estimated_value": row.get("estimated_value", 0),
         "city":            row.get("city", ""),
+        "project_city":    row.get("city", ""),
+        "project_state":   row.get("state", "CO"),
+        "project_name":    str(row.get("project_name") or row.get("description", ""))[:100],
+        "project_value":   str(row.get("estimated_value", "")),
+        "phase_note":      row.get("phase_note", ""),
         "issue_date":      row.get("issue_date", ""),
         "description":     str(row.get("description", "")),
     }
