@@ -84,7 +84,7 @@ def email_html(email: str) -> str:
     return '<span class="email-need">⚠️ Email нужен</span>'
 
 
-def render_lead_card(row: pd.Series):
+def render_lead_card(row: pd.Series, key_prefix: str = "card"):
     tier   = row.get("tier", "Cold")
     score  = int(row.get("score", 0))
     border = TIER_BORDER.get(tier, "#ccc")
@@ -163,7 +163,7 @@ def render_lead_card(row: pd.Series):
                 icon = STATUS_ICON.get(status, "🔵")
                 st.success(f"{icon} Уже в CRM — статус: **{status}**")
             else:
-                card_key = f"crm_{email_key.replace('@','_').replace('.','_')}"
+                card_key = f"crm_{key_prefix}_{email_key.replace('@','_').replace('.','_')}"
                 if st.button("➕ В CRM (сгенерировать письмо)", key=card_key, type="primary"):
                     with st.spinner("Добавляю в CRM и генерирую письмо…"):
                         updated = add_to_crm(row.to_dict(), crm)
@@ -201,7 +201,7 @@ def show_leads(df: pd.DataFrame, key_prefix: str):
     st.caption(f"Showing {len(filtered)} of {len(df)} leads")
 
     for _, row in filtered.iterrows():
-        render_lead_card(row)
+        render_lead_card(row, key_prefix)
 
 
 def ensure_cols(df: pd.DataFrame) -> pd.DataFrame:
