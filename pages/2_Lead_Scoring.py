@@ -1,3 +1,4 @@
+import html as _html
 import io
 import sys
 from pathlib import Path
@@ -130,8 +131,15 @@ def render_lead_card(row: pd.Series, key_prefix: str = "card", idx: int = 0):
 
     act_badge   = actuality_html(act)
     email_badge = email_html(email)
-    stage_str   = f" &nbsp;·&nbsp; 📅 {stage}" if stage else ""
-    city_str    = f" &nbsp;·&nbsp; 📍 {city}" if city else ""
+
+    # Escape all user-data before inserting into HTML
+    address    = _html.escape(address)
+    desc       = _html.escape(desc)
+    project    = _html.escape(str(project or "—"))
+    value_str  = _html.escape(value_str)
+    action     = _html.escape(str(action))
+    stage_str  = f" &nbsp;·&nbsp; 📅 {_html.escape(stage)}" if stage else ""
+    city_str   = f" &nbsp;·&nbsp; 📍 {_html.escape(city)}" if city else ""
 
     crm_data = st.session_state.get("crm_data", {})
     email_key_check = email.lower().strip() if email and email.strip() not in ("", "nan") else ""
@@ -224,10 +232,34 @@ def show_leads(df: pd.DataFrame, key_prefix: str):
     elif email_filter == "⚠️ Нужен email":
         filtered = filtered[~(filtered["email"].notna() & filtered["email"].astype(str).str.strip().ne("") & filtered["email"].astype(str).str.strip().ne("nan"))]
 
-    st.caption(f"Showing {len(filtered)} of {len(df)} leads")
+    PAGE_SIZE = 15
+    total = len(filtered)
+    n_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
 
-    for idx, (_, row) in enumerate(filtered.iterrows()):
-        render_lead_card(row, key_prefix, idx)
+    page_key = f"page_{key_prefix}"
+    if page_key not in st.session_state:
+        st.session_state[page_key] = 0
+    page = min(st.session_state[page_key], n_pages - 1)
+
+    start = page * PAGE_SIZE
+    end = min(start + PAGE_SIZE, total)
+    page_df = filtered.iloc[start:end]
+
+    st.caption(f"Лидов: {total} · стр. {page + 1} из {n_pages} · показано {start + 1}–{end}")
+
+    if n_pages > 1:
+        pc = st.columns([1, 4, 1])
+        with pc[0]:
+            if st.button("◀ Назад", key=f"prev_{key_prefix}", disabled=(page == 0)):
+                st.session_state[page_key] = page - 1
+                st.rerun()
+        with pc[2]:
+            if st.button("Вперёд ▶", key=f"next_{key_prefix}", disabled=(page == n_pages - 1)):
+                st.session_state[page_key] = page + 1
+                st.rerun()
+
+    for idx, (_, row) in enumerate(page_df.iterrows()):
+        render_lead_card(row, key_prefix, start + idx)
 
 
 def ensure_cols(df: pd.DataFrame) -> pd.DataFrame:
